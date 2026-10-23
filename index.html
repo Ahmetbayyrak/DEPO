@@ -33,4 +33,314 @@ tr.krit td{background:#331816}
 .b{padding:3px 9px;border-radius:10px;font-size:.75rem;font-weight:700}.b.k{background:var(--dn);color:#fff}.b.n{background:#1b2e1e;color:var(--ok)}
 .hide{display:none!important}
 #login{max-width:360px;margin:12vh auto;padding:16px}
-.err{color:var(--dn);marg
+.err{color:var(--dn);margin:8px 0;font-size:.9rem}.mut{color:var(--mut)}
+.bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;align-items:center}.bar input{margin:0;flex:1;min-width:140px}
+</style>
+</head>
+<body>
+
+<div id="login">
+  <div class="card">
+    <h3>☕ Depo Stok Sistemi</h3>
+    <label>Kullanıcı Adı</label><input id="l-mail" type="text" autocomplete="username" autocapitalize="none" autocorrect="off">
+    <label>Şifre</label><input id="l-pass" type="password" autocomplete="current-password" onkeydown="if(event.key==='Enter')girisYap()">
+    <div class="err" id="l-err"></div>
+    <button class="btn" style="width:100%" onclick="girisYap()">Giriş Yap</button>
+  </div>
+  <div class="card hide" id="kurulum">
+    <div class="mut" style="margin-bottom:10px">İlk kurulum: admin hesabı hazır (admin / 123). Sadece butona bas.</div>
+    <input id="q-ad" placeholder="Ad Soyad" value="Admin"><input id="q-user" placeholder="Kullanıcı adı" value="admin" autocapitalize="none" autocorrect="off"><input id="q-pass" type="text" placeholder="Şifre (min 3)" value="123">
+    <div class="err" id="q-err"></div>
+    <button class="btn g" style="width:100%" onclick="kurulumYap()">Admin Hesabı Oluştur</button>
+  </div>
+</div>
+
+<div id="app" class="hide">
+  <header>
+    <b>☕ Depo Stok</b>
+    <span><span class="mut" id="kim"></span> <button class="btn o s" onclick="auth.signOut()">Çıkış</button></span>
+  </header>
+  <nav id="nav">
+    <button data-t="stok" class="on">📦 Güncel Stok</button>
+    <button data-t="islem">↕️ Giriş / Çıkış</button>
+    <button data-t="hareket">🕑 Hareketler</button>
+    <button data-t="urun" class="adm">🏷️ Ürünler</button>
+    <button data-t="sayim" class="adm">📋 Sayım</button>
+    <button data-t="kullanici" class="adm">👥 Kullanıcılar</button>
+  </nav>
+  <main>
+    <!-- STOK -->
+    <div id="t-stok" class="tab">
+      <div class="grid">
+        <div class="stat"><small>Ürün Sayısı</small><b id="s-adet">0</b></div>
+        <div class="stat"><small>Kritik Ürün</small><b id="s-krit" style="color:var(--dn)">0</b></div>
+        <div class="stat adm"><small>Toplam Stok Değeri</small><b id="s-deger">0 ₺</b></div>
+      </div>
+      <div class="card">
+        <div class="bar">
+          <input id="ara" placeholder="Ürün ara..." oninput="stokCiz()">
+          <label style="margin:0;display:flex;gap:6px;align-items:center"><input type="checkbox" id="sadeceKrit" style="width:auto;margin:0" onchange="stokCiz()"> Sadece kritik</label>
+          <button class="btn g adm" onclick="excelStok()">⬇️ Excel</button>
+        </div>
+        <div class="tw"><table><thead><tr><th>Ürün</th><th>Kategori</th><th>Stok</th><th>Kritik Seviye</th><th class="adm">Birim Maliyet</th><th class="adm">Değer</th><th>Durum</th></tr></thead><tbody id="stok-body"></tbody></table></div>
+      </div>
+    </div>
+
+    <!-- İŞLEM -->
+    <div id="t-islem" class="tab hide">
+      <div class="card">
+        <h3>Depo Giriş / Çıkış</h3>
+        <label>Ürün</label><select id="i-urun"></select>
+        <div class="mut" id="i-mevcut" style="margin:-4px 0 10px"></div>
+        <div class="row">
+          <div><label>Miktar</label><input id="i-miktar" type="number" step="any" min="0" inputmode="decimal"></div>
+          <div><label>Not (opsiyonel)</label><input id="i-not" placeholder="Fatura no, neden vb."></div>
+        </div>
+        <div class="err" id="i-err"></div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn g" onclick="islem('giris')">➕ Depoya Giriş</button>
+          <button class="btn r" onclick="islem('cikis')">➖ Depodan Çıkış</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- HAREKET -->
+    <div id="t-hareket" class="tab hide">
+      <div class="card">
+        <div class="bar"><h3 style="margin:0;flex:1">Son Hareketler</h3><button class="btn g adm" onclick="excelHareket()">⬇️ Excel</button></div>
+        <div class="tw"><table><thead><tr><th>Tarih</th><th>Ürün</th><th>Tip</th><th>Miktar</th><th>Kullanıcı</th><th>Not</th></tr></thead><tbody id="har-body"></tbody></table></div>
+      </div>
+    </div>
+
+    <!-- ÜRÜNLER -->
+    <div id="t-urun" class="tab hide">
+      <div class="card">
+        <h3 id="u-baslik">Yeni Ürün Kaydet</h3>
+        <input type="hidden" id="u-id">
+        <div class="row">
+          <div><label>Ürün Adı</label><input id="u-ad"></div>
+          <div><label>Kategori</label><input id="u-kat" placeholder="Süt, Kahve, Ambalaj..."></div>
+          <div><label>Birim</label><select id="u-birim"><option>adet</option><option>kg</option><option>lt</option><option>paket</option><option>koli</option></select></div>
+          <div><label>Birim Maliyet (₺)</label><input id="u-mal" type="number" step="any" min="0"></div>
+          <div><label>Kritik Seviye</label><input id="u-krit" type="number" step="any" min="0"></div>
+          <div id="u-stokwrap"><label>Başlangıç Stok</label><input id="u-stok" type="number" step="any" min="0"></div>
+        </div>
+        <div class="err" id="u-err"></div>
+        <button class="btn" onclick="urunKaydet()">Kaydet</button>
+        <button class="btn o" onclick="urunTemizle()">Temizle</button>
+      </div>
+      <div class="card"><div class="tw"><table><thead><tr><th>Ürün</th><th>Kategori</th><th>Birim</th><th>Maliyet</th><th>Kritik</th><th></th></tr></thead><tbody id="urun-body"></tbody></table></div></div>
+    </div>
+
+    <!-- SAYIM -->
+    <div id="t-sayim" class="tab hide">
+      <div class="card">
+        <div class="bar"><h3 style="margin:0;flex:1">Stok Sayımı</h3>
+          <button class="btn g" onclick="sayimUygula()">✅ Sayımı Uygula</button>
+          <button class="btn o" onclick="excelSayim()">⬇️ Sayım Excel</button></div>
+        <p class="mut" style="margin-bottom:10px">Sayılan miktarı yaz; boş bıraktığın ürünler değişmez. Uygulayınca stok sayıma eşitlenir ve fark kaydedilir.</p>
+        <div class="tw"><table><thead><tr><th>Ürün</th><th>Sistem Stoku</th><th>Sayılan</th><th>Fark</th></tr></thead><tbody id="sayim-body"></tbody></table></div>
+      </div>
+    </div>
+
+    <!-- KULLANICI -->
+    <div id="t-kullanici" class="tab hide">
+      <div class="card">
+        <h3>Yeni Kullanıcı Ekle</h3>
+        <div class="row">
+          <div><label>Ad Soyad</label><input id="k-ad"></div>
+          <div><label>Kullanıcı Adı</label><input id="k-mail" type="text" autocapitalize="none" autocorrect="off"></div>
+          <div><label>Şifre (min 3)</label><input id="k-pass" type="text"></div>
+          <div><label>Rol</label><select id="k-rol"><option value="kullanici">Kullanıcı (giriş/çıkış)</option><option value="admin">Admin</option></select></div>
+        </div>
+        <div class="err" id="k-err"></div>
+        <button class="btn" onclick="kullaniciEkle()">Kullanıcı Oluştur</button>
+      </div>
+      <div class="card"><div class="tw"><table><thead><tr><th>Ad</th><th>Kullanıcı Adı</th><th>Rol</th></tr></thead><tbody id="kul-body"></tbody></table></div></div>
+    </div>
+  </main>
+</div>
+
+<script>
+const cfg={apiKey:"AIzaSyCSwg7TWH__ZaPVlvpFOI3s_mUJn0mhUfk",authDomain:"gastro-kafe.firebaseapp.com",projectId:"gastro-kafe",storageBucket:"gastro-kafe.firebasestorage.app",messagingSenderId:"223854582314",appId:"1:223854582314:web:01f43b7592765b3a6ac153",databaseURL:"https://gastro-kafe-default-rtdb.firebaseio.com"};
+firebase.initializeApp(cfg);
+const auth=firebase.auth(),db=firebase.database();
+let me=null,admin=false,urunler={},hareketler={},attached=false;
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const tl=n=>(Number(n)||0).toLocaleString('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2})+' ₺';
+const sayi=n=>(Number(n)||0).toLocaleString('tr-TR',{maximumFractionDigits:3});
+const krit=u=>(u.kritik>0)&&(u.stok||0)<=u.kritik;
+const _tr={'ç':'c','ğ':'g','ı':'i','ö':'o','ş':'s','ü':'u'};
+const uname=s=>String(s).trim().toLowerCase().replace(/[çğıöşü]/g,c=>_tr[c]).replace(/[^a-z0-9._-]/g,'');
+const eposta=s=>uname(s)+'@depo.local';
+const sifre=p=>p+'#depo';
+const sirali=()=>Object.entries(urunler).sort((a,b)=>a[1].ad.localeCompare(b[1].ad,'tr'));
+
+/* GİRİŞ */
+function girisYap(){
+  $('l-err').textContent='';$('l-err').style.color='';
+  auth.signInWithEmailAndPassword(eposta($('l-mail').value),sifre($('l-pass').value)).catch(x=>{const m={'auth/operation-not-allowed':'Firebase\'de E-posta/Şifre yöntemi açık değil (Authentication > Sign-in method).','auth/unauthorized-domain':'Bu alan adı Firebase\'de yetkili değil.','auth/invalid-credential':'Kullanıcı adı veya şifre hatalı.','auth/user-not-found':'Bu kullanıcı adı yok.','auth/wrong-password':'Şifre hatalı.','auth/invalid-email':'Kullanıcı adı geçersiz.'};$('l-err').textContent=(m[x.code]||'Hata')+' ['+x.code+']';});
+}
+db.ref('ayarlar/kurulum').once('value').then(s=>{if(!s.val()){$('kurulum').classList.remove('hide');kurulumYap(true);}}).catch(x=>{$('l-err').textContent='Veritabanına erişilemiyor: Rules bölümünü güncelleyip Yayınla\'ya bas. ['+(x.code||x.message)+']';});
+function kurulumYap(oto){
+  const ad=$('q-ad').value.trim(),un=uname($('q-user').value),pw=$('q-pass').value,e=$('q-err');
+  e.textContent='';
+  if(!ad||!un||pw.length<3)return e.textContent='Ad, kullanıcı adı ve en az 3 karakterli şifre gerekli.';
+  const app2=firebase.apps.find(a=>a.name==='ikinci')||firebase.initializeApp(cfg,'ikinci');
+  const d2=firebase.database(app2);
+  const a2=app2.auth();
+  a2.createUserWithEmailAndPassword(eposta(un),sifre(pw)).catch(x=>{if(x.code==='auth/email-already-in-use')return a2.signInWithEmailAndPassword(eposta(un),sifre(pw));throw x;})
+  .then(c=>d2.ref('kullanicilar/'+c.user.uid).set({ad,kullaniciAdi:un,email:eposta(un),rol:'admin'}))
+  .then(()=>d2.ref('ayarlar/kurulum').set(true))
+  .then(()=>{app2.auth().signOut();$('kurulum').classList.add('hide');if(oto){$('l-err').style.color='var(--ok)';$('l-err').textContent='Admin hesabı hazırlandı. Kullanıcı adı: admin, şifre: 123';return;}return auth.signInWithEmailAndPassword(eposta(un),sifre(pw));})
+  .catch(x=>$('kurulum').classList.remove('hide')||(e.textContent=x.code==='auth/email-already-in-use'?'Bu kullanıcı adı zaten var.':x.code==='auth/operation-not-allowed'?'Firebase\'de E-posta/Şifre yöntemi açık değil.':'Hata: '+x.message));
+}
+auth.onAuthStateChanged(async u=>{
+  if(!u){me=null;admin=false;$('app').classList.add('hide');$('login').classList.remove('hide');return;}
+  let p=null;
+  try{p=(await db.ref('kullanicilar/'+u.uid).once('value')).val();}catch(e){}
+  me={uid:u.uid,email:u.email,ad:(p&&p.ad)||u.email};
+  admin=!!p&&p.rol==='admin';
+  $('kim').textContent=me.ad+(admin?' (Admin)':'');
+  document.querySelectorAll('.adm').forEach(e=>e.classList.toggle('hide',!admin));
+  $('login').classList.add('hide');$('app').classList.remove('hide');
+  tab('stok');
+  if(!attached){attached=true;dinle();}
+});
+function dinle(){
+  db.ref('urunler').on('value',s=>{urunler=s.val()||{};stokCiz();islemListe();if(admin){urunCiz();sayimCiz();}});
+  db.ref('hareketler').orderByChild('ts').limitToLast(300).on('value',s=>{hareketler=s.val()||{};harCiz();});
+  if(admin)db.ref('kullanicilar').on('value',s=>{const k=s.val()||{};$('kul-body').innerHTML=Object.values(k).map(x=>`<tr><td>${esc(x.ad)}</td><td>${esc(x.kullaniciAdi||String(x.email||'').split('@')[0])}</td><td>${x.rol==='admin'?'Admin':'Kullanıcı'}</td></tr>`).join('');});
+}
+
+/* SEKME */
+function tab(t){
+  document.querySelectorAll('.tab').forEach(e=>e.classList.add('hide'));
+  $('t-'+t).classList.remove('hide');
+  document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
+}
+document.querySelectorAll('#nav button').forEach(b=>b.onclick=()=>tab(b.dataset.t));
+
+/* STOK */
+function stokCiz(){
+  const q=$('ara').value.toLocaleLowerCase('tr'),so=$('sadeceKrit').checked;
+  let rows='',k=0,deger=0,n=0;
+  sirali().forEach(([id,u])=>{
+    n++;const c=krit(u);if(c)k++;deger+=(u.stok||0)*(u.maliyet||0);
+    if(q&&!(u.ad+' '+(u.kategori||'')).toLocaleLowerCase('tr').includes(q))return;
+    if(so&&!c)return;
+    rows+=`<tr class="${c?'krit':''}"><td><b>${esc(u.ad)}</b></td><td>${esc(u.kategori)}</td><td><b>${sayi(u.stok)}</b> ${esc(u.birim)}</td><td>${u.kritik>0?sayi(u.kritik):'-'}</td><td class="adm ${admin?'':'hide'}">${tl(u.maliyet)}</td><td class="adm ${admin?'':'hide'}">${tl((u.stok||0)*(u.maliyet||0))}</td><td><span class="b ${c?'k':'n'}">${c?'KRİTİK':'Normal'}</span></td></tr>`;
+  });
+  $('stok-body').innerHTML=rows||'<tr><td colspan="7" class="mut">Kayıt yok.</td></tr>';
+  $('s-adet').textContent=n;$('s-krit').textContent=k;$('s-deger').textContent=tl(deger);
+}
+
+/* GİRİŞ / ÇIKIŞ */
+function islemListe(){
+  const s=$('i-urun'),v=s.value;
+  s.innerHTML=sirali().map(([id,u])=>`<option value="${id}">${esc(u.ad)}</option>`).join('');
+  if(v&&urunler[v])s.value=v;mevcutGoster();
+}
+function mevcutGoster(){const u=urunler[$('i-urun').value];$('i-mevcut').textContent=u?`Mevcut stok: ${sayi(u.stok)} ${u.birim}`:'';}
+$('i-urun').onchange=mevcutGoster;
+function islem(tip){
+  const id=$('i-urun').value,m=parseFloat($('i-miktar').value),not=$('i-not').value.trim(),e=$('i-err');
+  e.textContent='';
+  if(!id)return e.textContent='Önce ürün seçin.';
+  if(!(m>0))return e.textContent='Geçerli bir miktar girin.';
+  db.ref('urunler/'+id+'/stok').transaction(c=>{c=c||0;if(tip==='cikis'&&c<m)return;return tip==='giris'?c+m:c-m;},(err,ok)=>{
+    if(err||!ok){e.textContent='Yetersiz stok veya kayıt hatası.';return;}
+    hareketYaz(id,tip,m,not);$('i-miktar').value='';$('i-not').value='';
+    e.style.color='var(--ok)';e.textContent='Kaydedildi.';setTimeout(()=>{e.textContent='';e.style.color='';},2000);
+  },false);
+}
+function hareketYaz(id,tip,m,not){
+  db.ref('hareketler').push({urunId:id,ad:urunler[id].ad,birim:urunler[id].birim,tip,miktar:m,not:not||'',kullanici:me.ad,ts:Date.now()});
+}
+
+/* HAREKETLER */
+const tipAd={giris:'Giriş',cikis:'Çıkış',sayim:'Sayım'};
+function harCiz(){
+  const list=Object.values(hareketler).sort((a,b)=>b.ts-a.ts);
+  $('har-body').innerHTML=list.map(h=>`<tr><td>${new Date(h.ts).toLocaleString('tr-TR')}</td><td>${esc(h.ad)}</td><td><span class="b ${h.tip==='giris'?'n':h.tip==='cikis'?'k':''}">${tipAd[h.tip]}</span></td><td>${h.tip==='sayim'&&h.miktar>0?'+':''}${sayi(h.miktar)} ${esc(h.birim)}</td><td>${esc(h.kullanici)}</td><td>${esc(h.not)}</td></tr>`).join('')||'<tr><td colspan="6" class="mut">Hareket yok.</td></tr>';
+}
+
+/* ÜRÜNLER (ADMIN) */
+function urunCiz(){
+  $('urun-body').innerHTML=sirali().map(([id,u])=>`<tr><td><b>${esc(u.ad)}</b></td><td>${esc(u.kategori)}</td><td>${esc(u.birim)}</td><td>${tl(u.maliyet)}</td><td>${sayi(u.kritik)}</td><td style="white-space:nowrap"><button class="btn o s" onclick="urunDuzenle('${id}')">Düzenle</button> <button class="btn r s" onclick="urunSil('${id}')">Sil</button></td></tr>`).join('');
+}
+function urunTemizle(){['u-id','u-ad','u-kat','u-mal','u-krit','u-stok'].forEach(i=>$(i).value='');$('u-baslik').textContent='Yeni Ürün Kaydet';$('u-stokwrap').classList.remove('hide');$('u-err').textContent='';}
+function urunDuzenle(id){
+  const u=urunler[id];$('u-id').value=id;$('u-ad').value=u.ad;$('u-kat').value=u.kategori||'';$('u-birim').value=u.birim;$('u-mal').value=u.maliyet||0;$('u-krit').value=u.kritik||0;
+  $('u-stokwrap').classList.add('hide');$('u-baslik').textContent='Ürünü Düzenle';window.scrollTo(0,0);
+}
+function urunKaydet(){
+  const ad=$('u-ad').value.trim(),id=$('u-id').value;
+  if(!ad)return $('u-err').textContent='Ürün adı gerekli.';
+  const d={ad,kategori:$('u-kat').value.trim(),birim:$('u-birim').value,maliyet:parseFloat($('u-mal').value)||0,kritik:parseFloat($('u-krit').value)||0};
+  if(id){db.ref('urunler/'+id).update(d).then(urunTemizle);}
+  else{
+    d.stok=parseFloat($('u-stok').value)||0;
+    const r=db.ref('urunler').push();
+    r.set(d).then(()=>{urunler[r.key]=d;if(d.stok>0)hareketYaz(r.key,'giris',d.stok,'Başlangıç stoku');urunTemizle();});
+  }
+}
+function urunSil(id){if(confirm('"'+urunler[id].ad+'" silinsin mi?'))db.ref('urunler/'+id).remove();}
+
+/* SAYIM (ADMIN) */
+function sayimCiz(){
+  const val={};document.querySelectorAll('.sy').forEach(i=>val[i.dataset.id]=i.value);
+  $('sayim-body').innerHTML=sirali().map(([id,u])=>`<tr><td><b>${esc(u.ad)}</b></td><td>${sayi(u.stok)} ${esc(u.birim)}</td><td><input class="sy" data-id="${id}" type="number" step="any" min="0" style="margin:0;width:120px" value="${val[id]??''}" oninput="fark(this)"></td><td id="f-${id}"></td></tr>`).join('');
+  document.querySelectorAll('.sy').forEach(fark);
+}
+function fark(i){
+  const u=urunler[i.dataset.id],f=$('f-'+i.dataset.id);
+  if(i.value===''||!u){f.textContent='';return;}
+  const d=parseFloat(i.value)-(u.stok||0);f.textContent=(d>0?'+':'')+sayi(d);f.style.color=d<0?'var(--dn)':d>0?'var(--ok)':'';
+}
+function sayimUygula(){
+  const g=[...document.querySelectorAll('.sy')].filter(i=>i.value!=='');
+  if(!g.length)return alert('Sayılan miktar girilmedi.');
+  if(!confirm(g.length+' ürünün stoku sayıma göre güncellenecek. Onaylıyor musun?'))return;
+  g.forEach(i=>{
+    const id=i.dataset.id,yeni=parseFloat(i.value),eski=urunler[id].stok||0;
+    db.ref('urunler/'+id+'/stok').set(yeni);
+    if(yeni!==eski)hareketYaz(id,'sayim',yeni-eski,'Sayım farkı (sistem '+sayi(eski)+' → sayılan '+sayi(yeni)+')');
+    i.value='';
+  });
+  alert('Sayım uygulandı.');
+}
+
+/* KULLANICILAR (ADMIN) */
+function kullaniciEkle(){
+  const ad=$('k-ad').value.trim(),mail=eposta($('k-mail').value),pw=$('k-pass').value,rol=$('k-rol').value,e=$('k-err');
+  e.textContent='';
+  if(!ad||!uname($('k-mail').value)||pw.length<3)return e.textContent='Ad, kullanıcı adı ve en az 3 karakterli şifre gerekli.';
+  const app2=firebase.apps.find(a=>a.name==='ikinci')||firebase.initializeApp(cfg,'ikinci');
+  app2.auth().createUserWithEmailAndPassword(mail,sifre(pw)).then(c=>{
+    return db.ref('kullanicilar/'+c.user.uid).set({ad,kullaniciAdi:uname($('k-mail').value),email:mail,rol});
+  }).then(()=>{app2.auth().signOut();['k-ad','k-mail','k-pass'].forEach(i=>$(i).value='');})
+  .catch(x=>e.textContent=x.code==='auth/email-already-in-use'?'Bu kullanıcı adı zaten var.':'Hata: '+x.message);
+}
+
+/* EXCEL (ADMIN) */
+const tarih=()=>new Date().toISOString().slice(0,10);
+function indir(rows,sheet,file){
+  if(!rows.length)return alert('İndirilecek veri yok.');
+  const ws=XLSX.utils.json_to_sheet(rows),wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,sheet);XLSX.writeFile(wb,file+'-'+tarih()+'.xlsx');
+}
+function excelStok(){
+  indir(sirali().map(([id,u])=>({'Ürün':u.ad,'Kategori':u.kategori||'','Birim':u.birim,'Stok':u.stok||0,'Kritik Seviye':u.kritik||0,'Birim Maliyet (₺)':u.maliyet||0,'Toplam Değer (₺)':+((u.stok||0)*(u.maliyet||0)).toFixed(2),'Durum':krit(u)?'KRİTİK':'Normal'})),'Stok','stok');
+}
+function excelHareket(){
+  indir(Object.values(hareketler).sort((a,b)=>b.ts-a.ts).map(h=>({'Tarih':new Date(h.ts).toLocaleString('tr-TR'),'Ürün':h.ad,'Tip':tipAd[h.tip],'Miktar':h.miktar,'Birim':h.birim,'Kullanıcı':h.kullanici,'Not':h.not})),'Hareketler','hareketler');
+}
+function excelSayim(){
+  const v={};document.querySelectorAll('.sy').forEach(i=>v[i.dataset.id]=i.value);
+  indir(sirali().map(([id,u])=>({'Ürün':u.ad,'Birim':u.birim,'Sistem Stoku':u.stok||0,'Sayılan':v[id]===''||v[id]===undefined?'':parseFloat(v[id]),'Fark':v[id]===''||v[id]===undefined?'':parseFloat(v[id])-(u.stok||0)})),'Sayım','sayim');
+}
+</script>
+</body>
+</html>
