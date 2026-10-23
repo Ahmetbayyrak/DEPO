@@ -160,7 +160,7 @@ tr.krit td{background:#331816}
         <div class="err" id="k-err"></div>
         <button class="btn" onclick="kullaniciEkle()">Kullanıcı Oluştur</button>
       </div>
-      <div class="card"><div class="tw"><table><thead><tr><th>Ad</th><th>Kullanıcı Adı</th><th>Rol</th></tr></thead><tbody id="kul-body"></tbody></table></div></div>
+      <div class="card"><div class="tw"><table><thead><tr><th>Ad</th><th>Kullanıcı Adı</th><th>Rol</th></tr></thead><tbody id="kul-body"></tbody></table></div></div><th>Rol</th><th></th></tr></thead><tbody id="kul-body">
     </div>
   </main>
 </div>
@@ -215,7 +215,7 @@ auth.onAuthStateChanged(async u=>{
 function dinle(){
   db.ref('urunler').on('value',s=>{urunler=s.val()||{};stokCiz();islemListe();if(admin){urunCiz();sayimCiz();}});
   db.ref('hareketler').orderByChild('ts').limitToLast(300).on('value',s=>{hareketler=s.val()||{};harCiz();});
-  if(admin)db.ref('kullanicilar').on('value',s=>{const k=s.val()||{};$('kul-body').innerHTML=Object.values(k).map(x=>`<tr><td>${esc(x.ad)}</td><td>${esc(x.kullaniciAdi||String(x.email||'').split('@')[0])}</td><td>${x.rol==='admin'?'Admin':'Kullanıcı'}</td></tr>`).join('');});
+    if(admin)db.ref('kullanicilar').on('value',s=>{const k=s.val()||{};$('kul-body').innerHTML=Object.entries(k).map(([id,x])=>`<tr><td>${esc(x.ad)}</td><td>${esc(x.kullaniciAdi||String(x.email||'').split('@')[0])}</td><td>${x.rol==='admin'?'Admin':'Kullanıcı'}</td><td>${id===firebase.auth().currentUser.uid?'':`<button class="btn o s" onclick="kullaniciSil('${id}')">Sil</button>`}</td></tr>`).join('');});
 }
 
 /* SEKME */
@@ -326,6 +326,10 @@ function kullaniciEkle(){
     return db.ref('kullanicilar/'+c.user.uid).set({ad,kullaniciAdi:uname($('k-mail').value),email:mail,rol});
   }).then(()=>{app2.auth().signOut();['k-ad','k-mail','k-pass'].forEach(i=>$(i).value='');})
   .catch(x=>e.textContent=x.code==='auth/email-already-in-use'?'Bu kullanıcı adı zaten var.':'Hata: '+x.message);
+}
+function kullaniciSil(id){
+  if(!confirm('Bu kullanıcının erişimi kaldırılsın mı?'))return;
+  db.ref('kullanicilar/'+id).remove().catch(x=>alert('Hata: '+x.message));
 }
 
 /* EXCEL (ADMIN) */
