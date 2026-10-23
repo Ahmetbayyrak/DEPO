@@ -112,7 +112,7 @@ tr.krit td{background:#331816}
     <div id="t-hareket" class="tab hide">
       <div class="card">
         <div class="bar"><h3 style="margin:0;flex:1">Son Hareketler</h3><button class="btn g adm" onclick="excelHareket()">⬇️ Excel</button></div>
-        <div class="tw"><table><thead><tr><th>Tarih</th><th>Ürün</th><th>Tip</th><th>Miktar</th><th>Kullanıcı</th><th>Not</th></tr></thead><tbody id="har-body"></tbody></table></div>
+        <div class="tw"><table><thead><tr><th>Tarih</th><th>Ürün</th><th>Tip</th><th>Miktar</th><th>Kullanıcı</th><th>Not</th></tr></thead><tbody id="har-body"></tbody></table></div><th>Not</th><th></th></tr></thead><tbody id="har-body">
       </div>
     </div>
 
@@ -264,10 +264,23 @@ function hareketYaz(id,tip,m,not){
 }
 
 /* HAREKETLER */
+  function hareketSil(id){
+  const h=hareketler[id];if(!h)return;
+  const var_=!!urunler[h.urunId];
+  if(!confirm('Bu hareket silinsin mi?'+(var_?'\nStok da geri alınacak.':'')))return;
+  const geri=h.tip==='cikis'?h.miktar:-h.miktar;
+  const sil=()=>db.ref('hareketler/'+id).remove().catch(x=>alert('Hata: '+x.message));
+  if(!var_)return sil();
+  db.ref('urunler/'+h.urunId+'/stok').transaction(c=>(c||0)+geri,(err,ok)=>{
+    if(err||!ok)return alert('Stok geri alınamadı.');
+    sil();
+  },false);
+}
+
 const tipAd={giris:'Giriş',cikis:'Çıkış',sayim:'Sayım'};
 function harCiz(){
-  const list=Object.values(hareketler).sort((a,b)=>b.ts-a.ts);
-  $('har-body').innerHTML=list.map(h=>`<tr><td>${new Date(h.ts).toLocaleString('tr-TR')}</td><td>${esc(h.ad)}</td><td><span class="b ${h.tip==='giris'?'n':h.tip==='cikis'?'k':''}">${tipAd[h.tip]}</span></td><td>${h.tip==='sayim'&&h.miktar>0?'+':''}${sayi(h.miktar)} ${esc(h.birim)}</td><td>${esc(h.kullanici)}</td><td>${esc(h.not)}</td></tr>`).join('')||'<tr><td colspan="6" class="mut">Hareket yok.</td></tr>';
+  const list=Object.entries(hareketler).map(([id,h])=>({...h,id})).sort((a,b)=>b.ts-a.ts);
+  $('har-body').innerHTML=list.map(h=>`<tr><td>${new Date(h.ts).toLocaleString('tr-TR')}</td><td>${esc(h.ad)}</td><td><span class="b ${h.tip==='giris'?'n':h.tip==='cikis'?'k':''}">${tipAd[h.tip]}</span></td><td>${h.tip==='sayim'&&h.miktar>0?'+':''}${sayi(h.miktar)} ${esc(h.birim)}</td><td>${esc(h.kullanici)}</td><td>${esc(h.not)}</td><td>${admin?`<button class="btn o s" onclick="hareketSil('${h.id}')">Sil</button>`:''}</td></tr>`).join('')||'<tr><td colspan="7" class="mut">Hareket yok.</td></tr>';
 }
 
 /* ÜRÜNLER (ADMIN) */
