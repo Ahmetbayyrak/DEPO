@@ -99,7 +99,9 @@ tr.krit td{background:#331816}
         <div class="row">
           <div><label>Miktar</label><input id="i-miktar" type="number" step="any" min="0" inputmode="decimal"></div>
           <div><label>Not (opsiyonel)</label><input id="i-not" placeholder="Fatura no, neden vb."></div>
+                 <div><label>Not (opsiyonel)</label><select id="i-not" onchange="notDegis()"><option value="">Seçiniz</option><option>Satın alma</option><option>Kafe kullanımı</option><option>Fire / Zayi</option><option>Son kullanma tarihi</option><option>İade</option><option>Sayım düzeltme</option><option value="__d">Diğer (yaz)</option></select><input id="i-not2" class="hide" placeholder="Notu yazın" style="margin-top:6px"></div>
         </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin:0 0 10px"><button type="button" class="btn o s" onclick="$('i-miktar').value=1">1</button><button type="button" class="btn o s" onclick="$('i-miktar').value=2">2</button><button type="button" class="btn o s" onclick="$('i-miktar').value=3">3</button><button type="button" class="btn o s" onclick="$('i-miktar').value=5">5</button><button type="button" class="btn o s" onclick="$('i-miktar').value=10">10</button><button type="button" class="btn o s" onclick="$('i-miktar').value=20">20</button><button type="button" class="btn o s" onclick="$('i-miktar').value=50">50</button></div>
         <div class="err" id="i-err"></div>
         <div style="display:flex;gap:10px;flex-wrap:wrap">
           <button class="btn g" onclick="islem('giris')">➕ Depoya Giriş</button>
@@ -123,7 +125,7 @@ tr.krit td{background:#331816}
         <input type="hidden" id="u-id">
         <div class="row">
           <div><label>Ürün Adı</label><input id="u-ad"></div>
-          <div><label>Kategori</label><input id="u-kat" placeholder="Süt, Kahve, Ambalaj..."></div>
+          <div><label>Kategori</label><select id="u-kat" onchange="katDegis()"><option value="">Seçiniz</option><option>Süt ürünleri</option><option>Kahve</option><option>Çay</option><option>Şurup &amp; Sos</option><option>Tatlı &amp; Pasta</option><option>Meyve &amp; Sebze</option><option>İçecek</option><option>Ambalaj</option><option>Temizlik</option><option>Diğer</option><option value="__d">+ Yeni kategori yaz</option></select><input id="u-kat2" class="hide" placeholder="Kategori adı" style="margin-top:6px">
           <div><label>Birim</label><select id="u-birim"><option>adet</option><option>kg</option><option>lt</option><option>paket</option><option>koli</option></select></div>
           <div><label>Birim Maliyet (₺)</label><input id="u-mal" type="number" step="any" min="0"></div>
           <div><label>Kritik Seviye</label><input id="u-krit" type="number" step="any" min="0"></div>
@@ -141,7 +143,8 @@ tr.krit td{background:#331816}
       <div class="card">
         <div class="bar"><h3 style="margin:0;flex:1">Stok Sayımı</h3>
           <button class="btn g" onclick="sayimUygula()">✅ Sayımı Uygula</button>
-          <button class="btn o" onclick="excelSayim()">⬇️ Sayım Excel</button></div>
+          <button class="btn o" onclick="excelSayim()">⬇️ Sayım Excel</button>
+          <button class="btn o" onclick="stokSifirla()">🗑️ Stokları Sıfırla</button></div>
         <p class="mut" style="margin-bottom:10px">Sayılan miktarı yaz; boş bıraktığın ürünler değişmez. Uygulayınca stok sayıma eşitlenir ve fark kaydedilir.</p>
         <div class="tw"><table><thead><tr><th>Ürün</th><th>Sistem Stoku</th><th>Sayılan</th><th>Fark</th></tr></thead><tbody id="sayim-body"></tbody></table></div>
       </div>
@@ -249,7 +252,7 @@ function islemListe(){
 function mevcutGoster(){const u=urunler[$('i-urun').value];$('i-mevcut').textContent=u?`Mevcut stok: ${sayi(u.stok)} ${u.birim}`:'';}
 $('i-urun').onchange=mevcutGoster;
 function islem(tip){
-  const id=$('i-urun').value,m=parseFloat($('i-miktar').value),not=$('i-not').value.trim(),e=$('i-err');
+  const id=$('i-urun').value,m=parseFloat($('i-miktar').value='';$('i-not').value='';$('i-not2').value='';notDegis();
   e.textContent='';
   if(!id)return e.textContent='Önce ürün seçin.';
   if(!(m>0))return e.textContent='Geçerli bir miktar girin.';
@@ -259,6 +262,8 @@ function islem(tip){
     e.style.color='var(--ok)';e.textContent='Kaydedildi.';setTimeout(()=>{e.textContent='';e.style.color='';},2000);
   },false);
 }
+  function notDegis(){$('i-not2').classList.toggle('hide',$('i-not').value!=='__d');}
+function notAl(){const v=$('i-not').value;return v==='__d'?$('i-not2').value.trim():v;}
 function hareketYaz(id,tip,m,not){
   db.ref('hareketler').push({urunId:id,ad:urunler[id].ad,birim:urunler[id].birim,tip,miktar:m,not:not||'',kullanici:me.ad,ts:Date.now()});
 }
@@ -287,15 +292,18 @@ function harCiz(){
 function urunCiz(){
   $('urun-body').innerHTML=sirali().map(([id,u])=>`<tr><td><b>${esc(u.ad)}</b></td><td>${esc(u.kategori)}</td><td>${esc(u.birim)}</td><td>${tl(u.maliyet)}</td><td>${sayi(u.kritik)}</td><td style="white-space:nowrap"><button class="btn o s" onclick="urunDuzenle('${id}')">Düzenle</button> <button class="btn r s" onclick="urunSil('${id}')">Sil</button></td></tr>`).join('');
 }
-function urunTemizle(){['u-id','u-ad','u-kat','u-mal','u-krit','u-stok'].forEach(i=>$(i).value='');$('u-baslik').textContent='Yeni Ürün Kaydet';$('u-stokwrap').classList.remove('hide');$('u-err').textContent='';}
+function urunTemizle(){['u-id','u-ad','u-kat','u-kat2','u-mal','u-krit','u-stok'].forEach(i=>$(i).value='');katDegis();$('u-baslik').textContent='Yeni Ürün Kaydet';$('u-stokwrap').classList.remove('hide');$('u-err').textContent='';}
 function urunDuzenle(id){
-  const u=urunler[id];$('u-id').value=id;$('u-ad').value=u.ad;$('u-kat').value=u.kategori||'';$('u-birim').value=u.birim;$('u-mal').value=u.maliyet||0;$('u-krit').value=u.kritik||0;
+  const u=urunler[id];$('u-id').value=id;$('u-ad').value=u.ad;katSec(u.kategori);$('u-birim').value=u.birim;$('u-mal').value=u.maliyet||0;$('u-krit').value=u.kritik||0;
   $('u-stokwrap').classList.add('hide');$('u-baslik').textContent='Ürünü Düzenle';window.scrollTo(0,0);
 }
+  function katDegis(){$('u-kat2').classList.toggle('hide',$('u-kat').value!=='__d');}
+function katAl(){const v=$('u-kat').value;return v==='__d'?$('u-kat2').value.trim():v;}
+function katSec(k){const s=$('u-kat');k=k||'';if(k&&![...s.options].some(o=>o.value===k)){s.value='__d';$('u-kat2').value=k;}else{s.value=k;$('u-kat2').value='';}katDegis();}
 function urunKaydet(){
   const ad=$('u-ad').value.trim(),id=$('u-id').value;
   if(!ad)return $('u-err').textContent='Ürün adı gerekli.';
-  const d={ad,kategori:$('u-kat').value.trim(),birim:$('u-birim').value,maliyet:parseFloat($('u-mal').value)||0,kritik:parseFloat($('u-krit').value)||0};
+  const d={ad,kategori:katAl(),birim:$('u-birim').value,maliyet:parseFloat($('u-mal').value)||0,kritik:parseFloat($('u-krit').value)||0};
   if(id){db.ref('urunler/'+id).update(d).then(urunTemizle);}
   else{
     d.stok=parseFloat($('u-stok').value)||0;
@@ -315,6 +323,14 @@ function fark(i){
   const u=urunler[i.dataset.id],f=$('f-'+i.dataset.id);
   if(i.value===''||!u){f.textContent='';return;}
   const d=parseFloat(i.value)-(u.stok||0);f.textContent=(d>0?'+':'')+sayi(d);f.style.color=d<0?'var(--dn)':d>0?'var(--ok)':'';
+}
+  function stokSifirla(){
+  const l=sirali().filter(([id,u])=>(u.stok||0)!==0);
+  if(!l.length)return alert('Sıfırlanacak stok yok.');
+  if(!confirm('TÜM ürünlerin stoğu 0 yapılsın mı?\n'+l.length+' üründe stok var. Bu işlem hareketlere kaydedilir.'))return;
+  if((prompt('Onaylamak için SIFIRLA yazın')||'').trim().toUpperCase()!=='SIFIRLA')return;
+  l.forEach(([id,u])=>{const eski=u.stok||0;db.ref('urunler/'+id+'/stok').set(0).then(()=>hareketYaz(id,'sayim',-eski,'Stok sıfırlama (sistem '+sayi(eski)+' → 0)')).catch(x=>alert('Hata: '+x.message));});
+  alert('Stoklar sıfırlandı.');
 }
 function sayimUygula(){
   const g=[...document.querySelectorAll('.sy')].filter(i=>i.value!=='');
