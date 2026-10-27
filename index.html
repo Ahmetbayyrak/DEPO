@@ -98,8 +98,7 @@ tr.krit td{background:#331816}
         <div class="mut" id="i-mevcut" style="margin:-4px 0 10px"></div>
         <div class="row">
           <div><label>Miktar</label><input id="i-miktar" type="number" step="any" min="0" inputmode="decimal"></div>
-          <div><label>Not (opsiyonel)</label><input id="i-not" placeholder="Fatura no, neden vb."></div>
-                 <div><label>Not (opsiyonel)</label><select id="i-not" onchange="notDegis()"><option value="">Seçiniz</option><option>Satın alma</option><option>Kafe kullanımı</option><option>Fire / Zayi</option><option>Son kullanma tarihi</option><option>İade</option><option>Sayım düzeltme</option><option value="__d">Diğer (yaz)</option></select><input id="i-not2" class="hide" placeholder="Notu yazın" style="margin-top:6px"></div>
+          <div><label>Not (opsiyonel)</label><select id="i-not" onchange="notDegis()"><option value="">Seçiniz</option><option>Satın alma</option><option>Kafe kullanımı</option><option>Fire / Zayi</option><option>Son kullanma tarihi</option><option>İade</option><option>Sayım düzeltme</option><option value="__d">Diğer (yaz)</option></select><input id="i-not2" class="hide" placeholder="Notu yazın" style="margin-top:6px"></div>
         </div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;margin:0 0 10px"><button type="button" class="btn o s" onclick="$('i-miktar').value=1">1</button><button type="button" class="btn o s" onclick="$('i-miktar').value=2">2</button><button type="button" class="btn o s" onclick="$('i-miktar').value=3">3</button><button type="button" class="btn o s" onclick="$('i-miktar').value=5">5</button><button type="button" class="btn o s" onclick="$('i-miktar').value=10">10</button><button type="button" class="btn o s" onclick="$('i-miktar').value=20">20</button><button type="button" class="btn o s" onclick="$('i-miktar').value=50">50</button></div>
         <div class="err" id="i-err"></div>
@@ -114,7 +113,7 @@ tr.krit td{background:#331816}
     <div id="t-hareket" class="tab hide">
       <div class="card">
         <div class="bar"><h3 style="margin:0;flex:1">Son Hareketler</h3><button class="btn g adm" onclick="excelHareket()">⬇️ Excel</button></div>
-        <div class="tw"><table><thead><tr><th>Tarih</th><th>Ürün</th><th>Tip</th><th>Miktar</th><th>Kullanıcı</th><th>Not</th></tr></thead><tbody id="har-body"></tbody></table></div><th>Not</th><th></th></tr></thead><tbody id="har-body">
+        <div class="tw"><table><thead><tr><th>Tarih</th><th>Ürün</th><th>Tip</th><th>Miktar</th><th>Kullanıcı</th><th>Not</th><th></th></tr></thead><tbody id="har-body"></tbody></table></div>
       </div>
     </div>
 
@@ -125,7 +124,7 @@ tr.krit td{background:#331816}
         <input type="hidden" id="u-id">
         <div class="row">
           <div><label>Ürün Adı</label><input id="u-ad"></div>
-          <div><label>Kategori</label><select id="u-kat" onchange="katDegis()"><option value="">Seçiniz</option><option>Süt ürünleri</option><option>Kahve</option><option>Çay</option><option>Şurup &amp; Sos</option><option>Tatlı &amp; Pasta</option><option>Meyve &amp; Sebze</option><option>İçecek</option><option>Ambalaj</option><option>Temizlik</option><option>Diğer</option><option value="__d">+ Yeni kategori yaz</option></select><input id="u-kat2" class="hide" placeholder="Kategori adı" style="margin-top:6px">
+          <div><label>Kategori</label><select id="u-kat" onchange="katDegis()"><option value="">Seçiniz</option><option>Süt ürünleri</option><option>Kahve</option><option>Çay</option><option>Şurup &amp; Sos</option><option>Tatlı &amp; Pasta</option><option>Meyve &amp; Sebze</option><option>İçecek</option><option>Ambalaj</option><option>Temizlik</option><option>Diğer</option><option value="__d">+ Yeni kategori yaz</option></select><input id="u-kat2" class="hide" placeholder="Kategori adı" style="margin-top:6px"></div>
           <div><label>Birim</label><select id="u-birim"><option>adet</option><option>kg</option><option>lt</option><option>paket</option><option>koli</option></select></div>
           <div><label>Birim Maliyet (₺)</label><input id="u-mal" type="number" step="any" min="0"></div>
           <div><label>Kritik Seviye</label><input id="u-krit" type="number" step="any" min="0"></div>
@@ -163,7 +162,7 @@ tr.krit td{background:#331816}
         <div class="err" id="k-err"></div>
         <button class="btn" onclick="kullaniciEkle()">Kullanıcı Oluştur</button>
       </div>
-      <div class="card"><div class="tw"><table><thead><tr><th>Ad</th><th>Kullanıcı Adı</th><th>Rol</th></tr></thead><tbody id="kul-body"></tbody></table></div></div><th>Rol</th><th></th></tr></thead><tbody id="kul-body">
+      <div class="card"><div class="tw"><table><thead><tr><th>Ad</th><th>Kullanıcı Adı</th><th>Rol</th><th></th></tr></thead><tbody id="kul-body"></tbody></table></div></div>
     </div>
   </main>
 </div>
@@ -218,7 +217,7 @@ auth.onAuthStateChanged(async u=>{
 function dinle(){
   db.ref('urunler').on('value',s=>{urunler=s.val()||{};stokCiz();islemListe();if(admin){urunCiz();sayimCiz();}});
   db.ref('hareketler').orderByChild('ts').limitToLast(300).on('value',s=>{hareketler=s.val()||{};harCiz();});
-    if(admin)db.ref('kullanicilar').on('value',s=>{const k=s.val()||{};$('kul-body').innerHTML=Object.entries(k).map(([id,x])=>`<tr><td>${esc(x.ad)}</td><td>${esc(x.kullaniciAdi||String(x.email||'').split('@')[0])}</td><td>${x.rol==='admin'?'Admin':'Kullanıcı'}</td><td>${id===firebase.auth().currentUser.uid?'':`<button class="btn o s" onclick="kullaniciSil('${id}')">Sil</button>`}</td></tr>`).join('');});
+  if(admin)db.ref('kullanicilar').on('value',s=>{const k=s.val()||{};$('kul-body').innerHTML=Object.entries(k).map(([id,x])=>`<tr><td>${esc(x.ad)}</td><td>${esc(x.kullaniciAdi||String(x.email||'').split('@')[0])}</td><td>${x.rol==='admin'?'Admin':'Kullanıcı'}</td><td>${id===firebase.auth().currentUser.uid?'':`<button class="btn o s" onclick="kullaniciSil('${id}')">Sil</button>`}</td></tr>`).join('');});
 }
 
 /* SEKME */
@@ -252,24 +251,24 @@ function islemListe(){
 function mevcutGoster(){const u=urunler[$('i-urun').value];$('i-mevcut').textContent=u?`Mevcut stok: ${sayi(u.stok)} ${u.birim}`:'';}
 $('i-urun').onchange=mevcutGoster;
 function islem(tip){
-  const id=$('i-urun').value,m=parseFloat($('i-miktar').value='';$('i-not').value='';$('i-not2').value='';notDegis();
+  const id=$('i-urun').value,m=parseFloat($('i-miktar').value),not=notAl(),e=$('i-err');
   e.textContent='';
   if(!id)return e.textContent='Önce ürün seçin.';
   if(!(m>0))return e.textContent='Geçerli bir miktar girin.';
   db.ref('urunler/'+id+'/stok').transaction(c=>{c=c||0;if(tip==='cikis'&&c<m)return;return tip==='giris'?c+m:c-m;},(err,ok)=>{
     if(err||!ok){e.textContent='Yetersiz stok veya kayıt hatası.';return;}
-    hareketYaz(id,tip,m,not);$('i-miktar').value='';$('i-not').value='';
+    hareketYaz(id,tip,m,not);$('i-miktar').value='';$('i-not').value='';$('i-not2').value='';notDegis();
     e.style.color='var(--ok)';e.textContent='Kaydedildi.';setTimeout(()=>{e.textContent='';e.style.color='';},2000);
   },false);
 }
-  function notDegis(){$('i-not2').classList.toggle('hide',$('i-not').value!=='__d');}
+function notDegis(){$('i-not2').classList.toggle('hide',$('i-not').value!=='__d');}
 function notAl(){const v=$('i-not').value;return v==='__d'?$('i-not2').value.trim():v;}
 function hareketYaz(id,tip,m,not){
   db.ref('hareketler').push({urunId:id,ad:urunler[id].ad,birim:urunler[id].birim,tip,miktar:m,not:not||'',kullanici:me.ad,ts:Date.now()});
 }
 
 /* HAREKETLER */
-  function hareketSil(id){
+function hareketSil(id){
   const h=hareketler[id];if(!h)return;
   const var_=!!urunler[h.urunId];
   if(!confirm('Bu hareket silinsin mi?'+(var_?'\nStok da geri alınacak.':'')))return;
@@ -297,7 +296,7 @@ function urunDuzenle(id){
   const u=urunler[id];$('u-id').value=id;$('u-ad').value=u.ad;katSec(u.kategori);$('u-birim').value=u.birim;$('u-mal').value=u.maliyet||0;$('u-krit').value=u.kritik||0;
   $('u-stokwrap').classList.add('hide');$('u-baslik').textContent='Ürünü Düzenle';window.scrollTo(0,0);
 }
-  function katDegis(){$('u-kat2').classList.toggle('hide',$('u-kat').value!=='__d');}
+function katDegis(){$('u-kat2').classList.toggle('hide',$('u-kat').value!=='__d');}
 function katAl(){const v=$('u-kat').value;return v==='__d'?$('u-kat2').value.trim():v;}
 function katSec(k){const s=$('u-kat');k=k||'';if(k&&![...s.options].some(o=>o.value===k)){s.value='__d';$('u-kat2').value=k;}else{s.value=k;$('u-kat2').value='';}katDegis();}
 function urunKaydet(){
@@ -324,7 +323,7 @@ function fark(i){
   if(i.value===''||!u){f.textContent='';return;}
   const d=parseFloat(i.value)-(u.stok||0);f.textContent=(d>0?'+':'')+sayi(d);f.style.color=d<0?'var(--dn)':d>0?'var(--ok)':'';
 }
-  function stokSifirla(){
+function stokSifirla(){
   const l=sirali().filter(([id,u])=>(u.stok||0)!==0);
   if(!l.length)return alert('Sıfırlanacak stok yok.');
   if(!confirm('TÜM ürünlerin stoğu 0 yapılsın mı?\n'+l.length+' üründe stok var. Bu işlem hareketlere kaydedilir.'))return;
